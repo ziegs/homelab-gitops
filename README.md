@@ -4,6 +4,27 @@ Highly opinionated template for deploying a single [k3s](https://k3s.io) cluster
 
 The purpose here is to showcase how you can deploy an entire Kubernetes cluster and show it off to the world using the [GitOps](https://www.weave.works/blog/what-is-gitops-really) tool [Flux](https://toolkit.fluxcd.io/). When completed, your Git repository will be driving the state of your Kubernetes cluster. In addition with the help of the [Ansible](https://github.com/ansible-collections/community.sops), [Terraform](https://github.com/carlpett/terraform-provider-sops) and [Flux](https://toolkit.fluxcd.io/guides/mozilla-sops/) SOPS integrations you'll be able to commit [Age](https://github.com/FiloSottile/age) encrypted secrets to your public repo.
 
+## Notes:
+
+Notes from installation.
+
+Host: Ubuntu Jammy on WSL2
+Server: Ubuntu Jammy on NUC10i7FNH
+
+
+- Lots of random SSL (tls handshake) failures both on host and server
+- Brew and apt both failed multiple times, just keep retrying failed steps
+- task ansible:prepare or init:
+  `apt` failed due to missing gpg key for hashicorp:
+  ```
+  wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+  ```
+  TODO: Add to ansible playbook
+
+- Cloudflare existing config had errors, had to delete root (omgomgomg.biz)
+  record so Terraform could take over
+
+
 ## Overview
 
 - [Introduction](https://github.com/onedr0p/flux-cluster-template#-introduction)
