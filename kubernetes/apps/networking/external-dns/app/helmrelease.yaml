@@ -45,6 +45,7 @@ spec:
       - --annotation-filter=external-dns.home.arpa/enabled in (true)
     policy: sync
     sources: ["ingress"]
+    logLevel: debug
     txtPrefix: k8s.
     txtOwnerId: default
     domainFilters: ["${SECRET_DOMAIN}"]
