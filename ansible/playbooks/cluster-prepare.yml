@@ -133,6 +133,49 @@
             state: permissive
             policy: targeted
           when: ansible_facts['distribution'] == 'Fedora'
+        - name: System Configuration (2) | Enable multipath configuration | Ubuntu
+          blockinfile:
+            path: /etc/multipath.conf
+            block: |
+              defaults {
+                user_friendly_names yes
+                find_multipaths yes
+              }
+            create: yes
+            owner: root
+            group: root
+            mode: 0600
+            state: present
+          register: multipathconp
+          when: ansible_facts['distribution'] == 'Ubuntu'
+        - name: System Configuration (2) | Enable multipath configuration | Fedora
+          command: mpathconf --enable --with_multipathd y
+          when: ansible_facts['distribution'] == 'Fedora'
+        - name: System Configuration (2) | Enable multipath  service | Ubuntu
+          ansible.builtin.systemd:
+            service: multipath-tools.service
+            state: restarted
+            enabled: true
+          when: ansible_facts['distribution'] == 'Ubuntu'
+        - name: System Configuration (2) | Enable iSCSI service | Ubuntu
+          ansible.builtin.systemd:
+            service: open-iscsi.service
+            state: started
+            enabled: true
+          when: ansible_facts['distribution'] == 'Ubuntu'
+        - name: System Configuration (2) | Enable multipath  service | Fedora
+          ansible.builtin.systemd:
+            service: multipathd
+            state: started
+            enabled: true
+          when: ansible_facts['distribution'] == 'Fedora'
+        - name: System Configuration (2) | Enable iSCSI service | Fedora
+          ansible.builtin.systemd:
+            service: iscsid
+            state: started
+            enabled: true
+          when: ansible_facts['distribution'] == 'Fedora'
+
       notify: Reboot
 
   handlers:

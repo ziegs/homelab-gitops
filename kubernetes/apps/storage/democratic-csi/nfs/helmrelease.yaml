@@ -1,0 +1,88 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/helm.toolkit.fluxcd.io/helmrelease_v2beta1.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: democratic-csi-nfs
+  namespace: storage
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: democratic-csi
+      version: 0.13.5
+      sourceRef:
+        kind: HelmRepository
+        name: democratic-csi
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 5
+  upgrade:
+    remediation:
+      retries: 5
+  values:
+    csiDriver:
+      name: "org.democratic-csi.nfs"
+    storageClasses:
+      - name: freenas-nfs-csi
+        defaultClass: false
+        reclaimPolicy: Retain
+        volumeBindingMode: Immediate
+        allowVolumeExpansion: true
+        parameters:
+          fsType: nfs
+        mountOptions:
+          - nfsvers=4
+          - noatime
+        secrets:
+          provisioner-secret:
+          controller-publish-secret:
+          node-stage-secret:
+          node-publish-secret:
+          controller-expand-secret:
+    driver:
+      config:
+        driver: freenas-nfs
+        instance_id:
+        httpConnection:
+          protocol: http
+          host: &host colossus.${SECRET_DOMAIN}
+          port: 80
+          allowInsecure: true
+        sshConnection:
+          host: *host
+          port: 22
+        zfs:
+          cli:
+            sudoEnabled: true
+          # Make sure to use the storage pool that was created previously
+          datasetParentName: tank/k8s/nfs/vols
+          detachedSnapshotsDatasetParentName: tank/k8s/nfs/snaps
+          datasetEnableQuotas: true
+          datasetEnableReservation: false
+          datasetPermissionsMode: "0777"
+          datasetPermissionsUser: root
+          datasetPermissionsGroup: wheel
+        nfs:
+          shareHost: *host
+          shareAlldirs: false
+          shareAllowedHosts: []
+          shareAllowedNetworks: []
+          shareMaprootUser: root
+          shareMaprootGroup: wheel
+          shareMapallUser: ""
+          shareMapallGroup: ""
+  valuesFrom:
+    - kind: Secret
+      name: truenas-nfs-secret
+      valuesKey: api-key
+      targetPath: driver.config.httpConnection.apikey
+    - kind: Secret
+      name: truenas-nfs-secret
+      valuesKey: ssh-user
+      targetPath: driver.config.sshConnection.username
+    - kind: Secret
+      name: truenas-nfs-secret
+      valuesKey: ssh-privateKey
+      targetPath: driver.config.sshConnection.privateKey
