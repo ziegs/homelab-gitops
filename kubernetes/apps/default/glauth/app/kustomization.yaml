@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+  - ./helmrelease.yaml
+secretGenerator:
+  - name: glauth
+    files:
+      - groups.toml=./config/groups.sops.toml
+      - server.toml=./config/server.sops.toml
+      - users.toml=./config/users.sops.toml
+generatorOptions:
+  disableNameSuffixHash: true
