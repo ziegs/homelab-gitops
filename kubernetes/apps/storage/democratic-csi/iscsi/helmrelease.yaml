@@ -1,0 +1,95 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: democratic-csi-iscsi
+  namespace: storage
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: democratic-csi
+      version: 0.13.5
+      sourceRef:
+        kind: HelmRepository
+        name: democratic-csi
+        namespace: flux-system
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 5
+  upgrade:
+    remediation:
+      retries: 5
+  values:
+    csiDriver:
+      name: "org.democratic-csi.iscsi"
+    storageClasses:
+      - name: freenas-iscsi-csi
+        defaultClass: false
+        reclaimPolicy: Delete
+        volumeBindingMode: Immediate
+        allowVolumeExpansion: true
+        parameters:
+          fsType: xfs
+        mountOptions: []
+        secrets:
+          provisioner-secret:
+          controller-publish-secret:
+          node-stage-secret:
+          node-publish-secret:
+          controller-expand-secret:
+    driver:
+      config:
+        driver: freenas-iscsi
+        instance_id:
+        httpConnection:
+          protocol: http
+          host: &host 192.168.100.170
+          port: 80
+          allowInsecure: true
+        sshConnection:
+          host: *host
+          port: 22
+        zfs:
+          cli:
+            sudoEnabled: true
+          # datasetParentName should be 17 chars or less
+          datasetParentName: tank/k8s/b/vols
+          detachedSnapshotsDatasetParentName: tank/k8s/b/snaps
+          zvolCompression:
+          zvolDedup:
+          zvolEnableReservation: false
+          zvolBlocksize: 16K
+        iscsi:
+          targetPortal: *host
+          interface:
+          namePrefix: csi-
+          nameSuffix: "-cluster"
+
+          targetGroups:
+            - targetGroupPortalGroup: 1
+              targetGroupInitiatorGroup: 1
+              targetGroupAuthType: None
+              targetGroupAuthGroup:
+
+          extentInsecureTpc: true
+          extentXenCompat: false
+          extentDisablePhysicalBlocksize: true
+          extentBlocksize: 4096
+          extentRpm: "5400"
+          extentAvailThreshold: 0
+  valuesFrom:
+    - kind: Secret
+      name: truenas-secret
+      valuesKey: api-key
+      targetPath: driver.config.httpConnection.apikey
+    - kind: Secret
+      name: truenas-secret
+      valuesKey: ssh-user
+      targetPath: driver.config.sshConnection.username
+    - kind: Secret
+      name: truenas-secret
+      valuesKey: ssh-privateKey
+      targetPath: driver.config.sshConnection.privateKey

@@ -159,7 +159,7 @@
           when: ansible_facts['distribution'] == 'Ubuntu'
         - name: System Configuration (2) | Enable iSCSI service | Ubuntu
           ansible.builtin.systemd:
-            service: open-iscsi.service
+            service: iscsid.service
             state: started
             enabled: true
           when: ansible_facts['distribution'] == 'Ubuntu'
