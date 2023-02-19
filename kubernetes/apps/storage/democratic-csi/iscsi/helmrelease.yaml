@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: democratic-csi-nfs
+  name: democratic-csi-iscsi
   namespace: storage
 spec:
   interval: 15m
@@ -24,18 +24,16 @@ spec:
       retries: 5
   values:
     csiDriver:
-      name: "org.democratic-csi.nfs"
+      name: "org.democratic-csi.iscsi"
     storageClasses:
-      - name: freenas-nfs-csi
+      - name: freenas-iscsi-csi
         defaultClass: false
-        reclaimPolicy: Retain
+        reclaimPolicy: Delete
         volumeBindingMode: Immediate
         allowVolumeExpansion: true
         parameters:
-          fsType: nfs
-        mountOptions:
-          - nfsvers=4
-          - noatime
+          fsType: xfs
+        mountOptions: []
         secrets:
           provisioner-secret:
           controller-publish-secret:
@@ -44,11 +42,10 @@ spec:
           controller-expand-secret:
     driver:
       config:
-        driver: freenas-nfs
+        driver: freenas-iscsi
         instance_id:
         httpConnection:
           protocol: http
-            #host: &host colossus.${SECRET_DOMAIN}
           host: &host 192.168.100.170
           port: 80
           allowInsecure: true
@@ -58,23 +55,31 @@ spec:
         zfs:
           cli:
             sudoEnabled: true
-          # Make sure to use the storage pool that was created previously
-          datasetParentName: tank/k8s/nfs/vols
-          detachedSnapshotsDatasetParentName: tank/k8s/nfs/snaps
-          datasetEnableQuotas: true
-          datasetEnableReservation: false
-          datasetPermissionsMode: "0777"
-          datasetPermissionsUser: root
-          datasetPermissionsGroup: wheel
-        nfs:
-          shareHost: *host
-          shareAlldirs: false
-          shareAllowedHosts: []
-          shareAllowedNetworks: []
-          shareMaprootUser: root
-          shareMaprootGroup: wheel
-          shareMapallUser: ""
-          shareMapallGroup: ""
+          # datasetParentName should be 17 chars or less
+          datasetParentName: tank/k8s/b/vols
+          detachedSnapshotsDatasetParentName: tank/k8s/b/snaps
+          zvolCompression:
+          zvolDedup:
+          zvolEnableReservation: false
+          zvolBlocksize: 16K
+        iscsi:
+          targetPortal: *host
+          interface:
+          namePrefix: csi-
+          nameSuffix: "-cluster"
+
+          targetGroups:
+            - targetGroupPortalGroup: 1
+              targetGroupInitiatorGroup: 1
+              targetGroupAuthType: None
+              targetGroupAuthGroup:
+
+          extentInsecureTpc: true
+          extentXenCompat: false
+          extentDisablePhysicalBlocksize: true
+          extentBlocksize: 4096
+          extentRpm: "5400"
+          extentAvailThreshold: 0
   valuesFrom:
     - kind: Secret
       name: truenas-secret
