@@ -76,14 +76,14 @@ spec:
           shareMapallGroup: ""
   valuesFrom:
     - kind: Secret
-      name: truenas-nfs-secret
+      name: truenas-secret
       valuesKey: api-key
       targetPath: driver.config.httpConnection.apikey
     - kind: Secret
-      name: truenas-nfs-secret
+      name: truenas-secret
       valuesKey: ssh-user
       targetPath: driver.config.sshConnection.username
     - kind: Secret
-      name: truenas-nfs-secret
+      name: truenas-secret
       valuesKey: ssh-privateKey
       targetPath: driver.config.sshConnection.privateKey
